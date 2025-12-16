@@ -1,4 +1,4 @@
-package com.dembasiby.productservice.dto;
+package com.dembasiby.productservice.dto.category;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

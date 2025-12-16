@@ -1,7 +1,7 @@
 package com.dembasiby.productservice.controller;
 
-import com.dembasiby.productservice.dto.CategoryDto;
-import com.dembasiby.productservice.dto.CreateCategoryDto;
+import com.dembasiby.productservice.dto.category.CategoryDto;
+import com.dembasiby.productservice.dto.category.CreateCategoryDto;
 import com.dembasiby.productservice.service.CategoryService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

@@ -1,4 +1,4 @@
-package com.dembasiby.productservice.dto;
+package com.dembasiby.productservice.dto.product;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;

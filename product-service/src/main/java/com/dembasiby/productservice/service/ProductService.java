@@ -1,8 +1,8 @@
 package com.dembasiby.productservice.service;
 
-import com.dembasiby.productservice.dto.CreateProductDto;
-import com.dembasiby.productservice.dto.ProductDto;
-import com.dembasiby.productservice.dto.UpdateProductDto;
+import com.dembasiby.productservice.dto.product.CreateProductDto;
+import com.dembasiby.productservice.dto.product.ProductDto;
+import com.dembasiby.productservice.dto.product.UpdateProductDto;
 
 import java.util.List;
 

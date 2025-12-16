@@ -1,8 +1,8 @@
 package com.dembasiby.productservice.service;
 
-import com.dembasiby.productservice.dto.CategoryDto;
-import com.dembasiby.productservice.dto.CreateCategoryDto;
-import com.dembasiby.productservice.dto.UpdateCategoryDto;
+import com.dembasiby.productservice.dto.category.CategoryDto;
+import com.dembasiby.productservice.dto.category.CreateCategoryDto;
+import com.dembasiby.productservice.dto.category.UpdateCategoryDto;
 import com.dembasiby.productservice.mapper.CategoryMapper;
 import com.dembasiby.productservice.model.Category;
 import com.dembasiby.productservice.repository.CategoryRepository;

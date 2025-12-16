@@ -1,6 +1,6 @@
 package com.dembasiby.productservice.mapper;
 
-import com.dembasiby.productservice.dto.CategoryDto;
+import com.dembasiby.productservice.dto.category.CategoryDto;
 import com.dembasiby.productservice.model.Category;
 
 public class CategoryMapper {

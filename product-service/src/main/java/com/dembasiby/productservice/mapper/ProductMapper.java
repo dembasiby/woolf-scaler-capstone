@@ -1,6 +1,6 @@
 package com.dembasiby.productservice.mapper;
 
-import com.dembasiby.productservice.dto.ProductDto;
+import com.dembasiby.productservice.dto.product.ProductDto;
 import com.dembasiby.productservice.model.Product;
 
 public class ProductMapper {
