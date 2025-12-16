@@ -33,6 +33,11 @@ public class CategoryController {
         return ResponseEntity.created(location).body(category);
     }
 
+    @GetMapping("/{id}")
+    public ResponseEntity<CategoryDto> getCategory(@PathVariable Long id) {
+        return ResponseEntity.ok(categoryService.getCategory(id));
+    }
+
     @GetMapping
     public ResponseEntity<List<CategoryDto>> findAllCategories() {
         return ResponseEntity.ok(categoryService.getCategoryList());
@@ -43,5 +48,10 @@ public class CategoryController {
             @PathVariable Long id,
             @Valid @RequestBody UpdateCategoryDto categoryDto) {
         return ResponseEntity.ok(categoryService.updateCategory(id, categoryDto));
+    }
+
+    @DeleteMapping("/{id}")
+    public void deleteCategory(@PathVariable Long id) {
+        categoryService.deleteCategory(id);
     }
 }

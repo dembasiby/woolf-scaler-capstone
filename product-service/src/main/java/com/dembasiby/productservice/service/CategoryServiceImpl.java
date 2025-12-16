@@ -3,9 +3,11 @@ package com.dembasiby.productservice.service;
 import com.dembasiby.productservice.dto.category.CategoryDto;
 import com.dembasiby.productservice.dto.category.CreateCategoryDto;
 import com.dembasiby.productservice.dto.category.UpdateCategoryDto;
+import com.dembasiby.productservice.exception.ConflictException;
 import com.dembasiby.productservice.mapper.CategoryMapper;
 import com.dembasiby.productservice.model.Category;
 import com.dembasiby.productservice.repository.CategoryRepository;
+import com.dembasiby.productservice.repository.ProductRepository;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -15,6 +17,7 @@ import java.util.List;
 @AllArgsConstructor
 public class CategoryServiceImpl implements CategoryService {
     private final CategoryRepository categoryRepository;
+    private final ProductRepository productRepository;
 
     @Override
     public CategoryDto createCategory(CreateCategoryDto createCategoryDto) {
@@ -42,7 +45,9 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Override
     public CategoryDto getCategory(Long id) {
-        return null;
+        return categoryRepository.findById(id)
+                .map(CategoryMapper::toCategoryDto)
+                .orElseThrow();
     }
 
     @Override
@@ -54,5 +59,12 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Override
     public void deleteCategory(Long id) {
+        Category category = categoryRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Category not found"));
+
+        if (productRepository.existsByCategoryIdAndIsDeletedFalse(id)) {
+           throw new ConflictException("");
+        }
+
     }
 }
