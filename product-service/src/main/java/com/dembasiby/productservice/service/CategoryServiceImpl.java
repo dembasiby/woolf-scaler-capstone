@@ -27,7 +27,17 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Override
     public CategoryDto updateCategory(Long id, UpdateCategoryDto categoryDto) {
-        return null;
+        Category category = categoryRepository
+                .findById(id)
+                .orElseThrow(() -> new RuntimeException("Category not found"));
+
+        if  (categoryDto.getName() != null) {
+            category.setName(categoryDto.getName());
+        }
+
+        Category updatedCategory = categoryRepository.save(category);
+
+        return CategoryMapper.toCategoryDto(updatedCategory);
     }
 
     @Override
@@ -44,6 +54,5 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Override
     public void deleteCategory(Long id) {
-
     }
 }

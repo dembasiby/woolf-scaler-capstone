@@ -2,6 +2,7 @@ package com.dembasiby.productservice.controller;
 
 import com.dembasiby.productservice.dto.category.CategoryDto;
 import com.dembasiby.productservice.dto.category.CreateCategoryDto;
+import com.dembasiby.productservice.dto.category.UpdateCategoryDto;
 import com.dembasiby.productservice.service.CategoryService;
 import jakarta.validation.Valid;
 import lombok.NonNull;
@@ -35,5 +36,12 @@ public class CategoryController {
     @GetMapping
     public ResponseEntity<List<CategoryDto>> findAllCategories() {
         return ResponseEntity.ok(categoryService.getCategoryList());
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<CategoryDto> updateCategory(
+            @PathVariable Long id,
+            @Valid @RequestBody UpdateCategoryDto categoryDto) {
+        return ResponseEntity.ok(categoryService.updateCategory(id, categoryDto));
     }
 }
