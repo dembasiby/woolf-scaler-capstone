@@ -37,7 +37,9 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Override
     public List<CategoryDto> getCategoryList() {
-        return List.of();
+        return categoryRepository.findAllByIsDeletedFalse().stream()
+                .map(CategoryMapper::toCategoryDto)
+                .toList();
     }
 
     @Override

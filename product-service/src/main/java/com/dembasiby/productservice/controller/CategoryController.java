@@ -4,16 +4,15 @@ import com.dembasiby.productservice.dto.category.CategoryDto;
 import com.dembasiby.productservice.dto.category.CreateCategoryDto;
 import com.dembasiby.productservice.service.CategoryService;
 import jakarta.validation.Valid;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.URI;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/categories")
@@ -31,5 +30,10 @@ public class CategoryController {
                 .toUri();
 
         return ResponseEntity.created(location).body(category);
+    }
+
+    @GetMapping
+    public ResponseEntity<List<CategoryDto>> findAllCategories() {
+        return ResponseEntity.ok(categoryService.getCategoryList());
     }
 }
