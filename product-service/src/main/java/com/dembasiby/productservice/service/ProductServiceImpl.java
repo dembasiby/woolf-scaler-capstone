@@ -1,8 +1,10 @@
 package com.dembasiby.productservice.service;
 
 import com.dembasiby.productservice.dto.product.CreateProductDto;
+import com.dembasiby.productservice.dto.product.ProductCategoryDto;
 import com.dembasiby.productservice.dto.product.ProductDto;
 import com.dembasiby.productservice.dto.product.UpdateProductDto;
+import com.dembasiby.productservice.exception.NotFoundException;
 import com.dembasiby.productservice.mapper.ProductMapper;
 import com.dembasiby.productservice.model.Category;
 import com.dembasiby.productservice.model.Product;
@@ -38,26 +40,39 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public ProductDto getProduct(Long id) {
-        return null;
+        return productRepository.findByIdAndIsDeletedFalse(id)
+                .map(ProductMapper::toProductDto)
+                .orElseThrow();
     }
 
     @Override
     public List<ProductDto> getProducts() {
-        return List.of();
+        return productRepository.findAllByIsDeletedFalse().stream()
+                .map(ProductMapper::toProductDto)
+                .toList();
     }
 
     @Override
     public ProductDto updateProduct(Long id, UpdateProductDto updateProductDto) {
-        return null;
-    }
+        Product product = productRepository.findByIdAndIsDeletedFalse(id)
+                .orElseThrow(() -> new NotFoundException("Product not found"));
 
-    @Override
-    public ProductDto updateProduct(UpdateProductDto updateProductDto) {
-        return null;
+        product.setTitle(updateProductDto.getTitle());
+        product.setDescription(updateProductDto.getDescription());
+        product.setPrice(updateProductDto.getPrice());
+        product.setImageUrl(updateProductDto.getImageUrl());
+
+        productRepository.save(product);
+
+        return ProductMapper.toProductDto(product);
+
+
     }
 
     @Override
     public void deleteProduct(Long id) {
-
+        Product product = productRepository.findByIdAndIsDeletedFalse(id)
+                .orElseThrow(() -> new NotFoundException("Product not found"));
+        product.setDeleted(true);
     }
 }
