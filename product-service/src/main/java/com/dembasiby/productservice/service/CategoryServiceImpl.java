@@ -3,7 +3,9 @@ package com.dembasiby.productservice.service;
 import com.dembasiby.productservice.dto.category.CategoryDto;
 import com.dembasiby.productservice.dto.category.CreateCategoryDto;
 import com.dembasiby.productservice.dto.category.UpdateCategoryDto;
+import com.dembasiby.productservice.dto.product.ProductCategoryDto;
 import com.dembasiby.productservice.exception.ConflictException;
+import com.dembasiby.productservice.exception.NotFoundException;
 import com.dembasiby.productservice.mapper.CategoryMapper;
 import com.dembasiby.productservice.model.Category;
 import com.dembasiby.productservice.repository.CategoryRepository;
@@ -31,8 +33,8 @@ public class CategoryServiceImpl implements CategoryService {
     @Override
     public CategoryDto updateCategory(Long id, UpdateCategoryDto categoryDto) {
         Category category = categoryRepository
-                .findById(id)
-                .orElseThrow(() -> new RuntimeException("Category not found"));
+                .findByIdAndIsDeletedFalse(id)
+                .orElseThrow(() -> new NotFoundException("Category not found"));
 
         if  (categoryDto.getName() != null) {
             category.setName(categoryDto.getName());
@@ -58,13 +60,23 @@ public class CategoryServiceImpl implements CategoryService {
     }
 
     @Override
+    public List<ProductCategoryDto> getCategoryProducts(Long id) {
+        Category category = categoryRepository.findByIdAndIsDeletedFalse(id)
+                .orElseThrow(() -> new NotFoundException("Category not found"));
+
+        return categoryRepository
+                .getFeaturedProductsByCategoryId(category.getId());
+    }
+
+    @Override
     public void deleteCategory(Long id) {
-        Category category = categoryRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Category not found"));
+        Category category = categoryRepository.findByIdAndIsDeletedFalse(id)
+                .orElseThrow(() -> new NotFoundException("Category not found"));
 
         if (productRepository.existsByCategoryIdAndIsDeletedFalse(id)) {
-           throw new ConflictException("");
+           throw new ConflictException("Category has active products");
         }
 
+        category.setDeleted(true);
     }
 }

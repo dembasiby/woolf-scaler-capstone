@@ -1,7 +1,6 @@
 package com.dembasiby.productservice.model;
 
 import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
 import jakarta.persistence.OneToMany;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -17,6 +16,6 @@ public class Category extends BaseModel {
 
     private String name;
 
-    @OneToMany(fetch = FetchType.EAGER)
+    @OneToMany
     private List<Product> featuredProducts;
 }
