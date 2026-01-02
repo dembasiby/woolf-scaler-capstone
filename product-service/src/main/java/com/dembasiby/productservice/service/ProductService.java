@@ -1,16 +1,19 @@
 package com.dembasiby.productservice.service;
 
-import com.dembasiby.productservice.dto.product.CreateProductDto;
-import com.dembasiby.productservice.dto.product.ProductCategoryDto;
-import com.dembasiby.productservice.dto.product.ProductDto;
-import com.dembasiby.productservice.dto.product.UpdateProductDto;
+import com.dembasiby.productservice.dto.product.*;
+import org.springframework.data.domain.Page;
 
 import java.util.List;
 
 public interface ProductService {
     ProductDto createProduct(CreateProductDto createProductDto);
     ProductDto getProduct(Long id);
-    List<ProductDto> getProducts();
+    ProductDetailsDto getProductDetails(Long id);
+    Page<ProductDto> getProducts(int pageNumber, int pageSize);
+    Page<ProductCategoryDto> getProductsByCategory(Long categoryId, int pageNumber, int pageSize);
     ProductDto updateProduct(Long id, UpdateProductDto updateProductDto);
     void deleteProduct(Long id);
+    ProductDetailsDto addSpecificationToProduct(CreateProductSpecificationDto productSpecDto);
+    void removeSpecificationFromProduct(Long productId, Long specId);
+    List<ProductSpecificationDto> listSpecifications(Long productId);
 }

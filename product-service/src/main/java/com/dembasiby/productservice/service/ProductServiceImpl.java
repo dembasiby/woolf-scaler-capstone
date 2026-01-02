@@ -1,16 +1,18 @@
 package com.dembasiby.productservice.service;
 
-import com.dembasiby.productservice.dto.product.CreateProductDto;
-import com.dembasiby.productservice.dto.product.ProductCategoryDto;
-import com.dembasiby.productservice.dto.product.ProductDto;
-import com.dembasiby.productservice.dto.product.UpdateProductDto;
+import com.dembasiby.productservice.dto.product.*;
 import com.dembasiby.productservice.exception.NotFoundException;
 import com.dembasiby.productservice.mapper.ProductMapper;
 import com.dembasiby.productservice.model.Category;
 import com.dembasiby.productservice.model.Product;
+import com.dembasiby.productservice.model.ProductSpecification;
 import com.dembasiby.productservice.repository.CategoryRepository;
 import com.dembasiby.productservice.repository.ProductRepository;
+import com.dembasiby.productservice.repository.ProductSpecificationRepository;
+import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -20,11 +22,12 @@ import java.util.List;
 public class ProductServiceImpl implements ProductService {
     private final CategoryRepository categoryRepository;
     private final ProductRepository productRepository;
+    private final ProductSpecificationRepository productSpecificationRepository;
 
     @Override
     public ProductDto createProduct(CreateProductDto createProductDto) {
-        Category category = categoryRepository.getReferenceById(
-                (long) createProductDto.getCategoryId());
+        Category category = categoryRepository.findByIdAndIsDeletedFalse(
+                createProductDto.getCategoryId()).orElseThrow(() -> new NotFoundException("Category not found"));
 
         Product product = new Product();
         product.setTitle(createProductDto.getTitle());
@@ -42,14 +45,30 @@ public class ProductServiceImpl implements ProductService {
     public ProductDto getProduct(Long id) {
         return productRepository.findByIdAndIsDeletedFalse(id)
                 .map(ProductMapper::toProductDto)
-                .orElseThrow();
+                .orElseThrow(()  -> new NotFoundException("Product not found"));
     }
 
     @Override
-    public List<ProductDto> getProducts() {
-        return productRepository.findAllByIsDeletedFalse().stream()
-                .map(ProductMapper::toProductDto)
-                .toList();
+    public ProductDetailsDto getProductDetails(Long id) {
+        return productRepository.findByIdAndIsDeletedFalse(id)
+                .map(ProductMapper::toProductDetailsDto)
+                .orElseThrow(()  -> new NotFoundException("Product not found"));
+    }
+
+    @Override
+    public Page<ProductDto> getProducts(int pageNumber, int pageSize) {
+        Page<Product> productPage = productRepository.findAllByIsDeletedFalse(
+                        PageRequest.of(pageNumber, pageSize));
+
+        return productPage.map(ProductMapper::toProductDto);
+    }
+
+    @Override
+    public Page<ProductCategoryDto> getProductsByCategory(Long categoryId, int pageNumber, int pageSize) {
+        Page<Product> productPage = productRepository
+                .findAllByCategoryIdAndIsDeletedFalse(
+                        categoryId,  PageRequest.of(pageNumber, pageSize));
+        return productPage.map(ProductMapper::toProductCategoryDto);
     }
 
     @Override
@@ -65,8 +84,6 @@ public class ProductServiceImpl implements ProductService {
         productRepository.save(product);
 
         return ProductMapper.toProductDto(product);
-
-
     }
 
     @Override
@@ -74,5 +91,40 @@ public class ProductServiceImpl implements ProductService {
         Product product = productRepository.findByIdAndIsDeletedFalse(id)
                 .orElseThrow(() -> new NotFoundException("Product not found"));
         product.setDeleted(true);
+        productRepository.save(product);
+    }
+
+    @Transactional
+    @Override
+    public ProductDetailsDto addSpecificationToProduct(CreateProductSpecificationDto productSpecDto) {
+        Product product = productRepository.findByIdAndIsDeletedFalse(productSpecDto.getProductId())
+                .orElseThrow(() -> new NotFoundException("Product not found"));
+
+        ProductSpecification productSpecification = new ProductSpecification();
+        productSpecification.setProduct(product);
+        productSpecification.setSpecificationKey(productSpecDto.getSpecKey());
+        productSpecification.setSpecificationValue(productSpecDto.getSpecValue());
+        productSpecificationRepository.save(productSpecification);
+
+        product.getProductSpecifications().add(productSpecification);
+        productRepository.save(product);
+
+        return ProductMapper.toProductDetailsDto(product);
+    }
+
+    @Transactional
+    @Override
+    public void removeSpecificationFromProduct(Long specId, Long productId) {
+        Product product = productRepository.findByIdAndIsDeletedFalse(productId)
+                .orElseThrow(() -> new NotFoundException("Product not found"));
+
+        productSpecificationRepository.deleteByIdAndProductId(specId, product.getId());
+    }
+
+    @Override
+    public List<ProductSpecificationDto> listSpecifications(Long productId) {
+        return productSpecificationRepository.findAllByProductId(productId)
+                .stream().map(ProductMapper::toProductSpecificationDto)
+                .toList();
     }
 }
