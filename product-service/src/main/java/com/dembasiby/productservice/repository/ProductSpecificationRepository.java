@@ -1,6 +1,5 @@
 package com.dembasiby.productservice.repository;
 
-import com.dembasiby.productservice.model.Product;
 import com.dembasiby.productservice.model.ProductSpecification;
 import org.springframework.data.jpa.repository.JpaRepository;
 
