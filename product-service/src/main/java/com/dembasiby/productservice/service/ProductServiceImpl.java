@@ -13,6 +13,7 @@ import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -56,19 +57,36 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public Page<ProductDto> getProducts(int pageNumber, int pageSize) {
-        Page<Product> productPage = productRepository.findAllByIsDeletedFalse(
-                        PageRequest.of(pageNumber, pageSize));
+    public Page<ProductDto> getProducts(
+            int pageNumber, int pageSize,
+            String sortBy, String sortDirection) {
 
-        return productPage.map(ProductMapper::toProductDto);
+        Sort sort = sortDirection.equalsIgnoreCase("asc") ?
+                Sort.by(Sort.Direction.ASC, sortBy) :
+                Sort.by(Sort.Direction.DESC, sortBy);
+
+        PageRequest pageRequest = PageRequest.of(pageNumber, pageSize, sort);
+
+        return productRepository.findAllByIsDeletedFalse(pageRequest)
+                .map(ProductMapper::toProductDto);
     }
 
     @Override
-    public Page<ProductCategoryDto> getProductsByCategory(Long categoryId, int pageNumber, int pageSize) {
-        Page<Product> productPage = productRepository
+    public Page<ProductCategoryDto> getProductsByCategory(
+            Long categoryId, int pageNumber, int pageSize,
+            String sortBy, String sortDirection) {
+
+        Sort sort = sortDirection.equalsIgnoreCase("asc") ?
+                Sort.by(Sort.Direction.ASC, sortBy) :
+                Sort.by(Sort.Direction.DESC, sortBy);
+
+        PageRequest pageRequest = PageRequest.of(pageNumber, pageSize, sort);
+
+        return productRepository
                 .findAllByCategoryIdAndIsDeletedFalse(
-                        categoryId,  PageRequest.of(pageNumber, pageSize));
-        return productPage.map(ProductMapper::toProductCategoryDto);
+                        categoryId,
+                        pageRequest)
+                .map(ProductMapper::toProductCategoryDto);
     }
 
     @Override

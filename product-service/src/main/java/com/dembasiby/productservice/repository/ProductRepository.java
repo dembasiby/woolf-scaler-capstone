@@ -1,6 +1,5 @@
 package com.dembasiby.productservice.repository;
 
-import com.dembasiby.productservice.model.Category;
 import com.dembasiby.productservice.model.Product;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

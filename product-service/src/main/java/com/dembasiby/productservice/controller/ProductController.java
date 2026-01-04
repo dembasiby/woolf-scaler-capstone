@@ -57,15 +57,26 @@ public class ProductController {
     }
 
     @GetMapping
-    public ResponseEntity<Page<ProductDto>> getAllProducts(@RequestParam int pageNumber, @RequestParam int pageSize ) {
-        return ResponseEntity.ok(productService.getProducts(pageNumber, pageSize));
+    public ResponseEntity<Page<ProductDto>> getAllProducts(
+            @RequestParam(required = false, defaultValue = "0") int pageNumber,
+            @RequestParam(required = false, defaultValue = "10") int pageSize,
+            @RequestParam(required = false, defaultValue = "id") String sortBy,
+            @RequestParam(required = false, defaultValue = "ASC") String sortDirection) {
+        return ResponseEntity.ok(productService.getProducts(
+                pageNumber, pageSize, sortBy, sortDirection));
     }
 
     @GetMapping("/categories/{categoryId}")
-    public ResponseEntity<Page<ProductCategoryDto>> getAllProductsByCategory(@PathVariable Long categoryId,
-                                                                             @RequestParam int pageNumber,
-                                                                             @RequestParam int pageSize) {
-        return ResponseEntity.ok(productService.getProductsByCategory(categoryId, pageNumber, pageSize));
+    public ResponseEntity<Page<ProductCategoryDto>> getAllProductsByCategory(
+            @PathVariable Long categoryId,
+            @RequestParam(required = false, defaultValue = "0") int pageNumber,
+            @RequestParam(required = false, defaultValue = "10") int pageSize,
+            @RequestParam(required = false, defaultValue = "id") String sortBy,
+            @RequestParam(required = false, defaultValue = "ASC") String sortDirection) {
+
+        return ResponseEntity.ok(productService.getProductsByCategory(
+                categoryId, pageNumber, pageSize,
+                sortBy, sortDirection));
     }
 
     @PutMapping("/{id}")
