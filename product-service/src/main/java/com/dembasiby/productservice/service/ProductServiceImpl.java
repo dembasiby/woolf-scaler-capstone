@@ -114,8 +114,8 @@ public class ProductServiceImpl implements ProductService {
 
     @Transactional
     @Override
-    public ProductDetailsDto addSpecificationToProduct(CreateProductSpecificationDto productSpecDto) {
-        Product product = productRepository.findByIdAndIsDeletedFalse(productSpecDto.getProductId())
+    public ProductDetailsDto addSpecificationToProduct(Long productId, CreateProductSpecificationDto productSpecDto) {
+        Product product = productRepository.findByIdAndIsDeletedFalse(productId)
                 .orElseThrow(() -> new NotFoundException("Product not found"));
 
         ProductSpecification productSpecification = new ProductSpecification();

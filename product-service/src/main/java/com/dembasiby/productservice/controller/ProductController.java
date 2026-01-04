@@ -31,8 +31,10 @@ public class ProductController {
     }
 
     @PostMapping("/{id}/specifications")
-    public ResponseEntity<ProductDetailsDto> addSpecificationToProduct(@PathVariable Long id, @Valid @RequestBody CreateProductSpecificationDto productSpecificationDto) {
-        ProductDetailsDto productDetailsDto = productService.addSpecificationToProduct(productSpecificationDto);
+    public ResponseEntity<ProductDetailsDto> addSpecificationToProduct(
+            @PathVariable Long id,
+            @Valid @RequestBody CreateProductSpecificationDto productSpecificationDto) {
+        ProductDetailsDto productDetailsDto = productService.addSpecificationToProduct(id, productSpecificationDto);
         URI location = ServletUriComponentsBuilder.fromCurrentRequest()
                 .path("/{id}/details")
                 .buildAndExpand(productDetailsDto.getId())

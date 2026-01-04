@@ -9,8 +9,6 @@ import lombok.Setter;
 @Getter @Setter
 @AllArgsConstructor
 public class CreateProductSpecificationDto {
-    @NotNull
-    private Long productId;
     @NotEmpty
     private String specKey;
     @NotEmpty

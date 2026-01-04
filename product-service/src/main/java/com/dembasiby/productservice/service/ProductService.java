@@ -16,7 +16,7 @@ public interface ProductService {
             String sortBy,String sortDirection);
     ProductDto updateProduct(Long id, UpdateProductDto updateProductDto);
     void deleteProduct(Long id);
-    ProductDetailsDto addSpecificationToProduct(CreateProductSpecificationDto productSpecDto);
+    ProductDetailsDto addSpecificationToProduct(Long productId, CreateProductSpecificationDto productSpecDto);
     void removeSpecificationFromProduct(Long productId, Long specId);
     List<ProductSpecificationDto> listSpecifications(Long productId);
 }
