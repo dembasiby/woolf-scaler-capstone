@@ -1,0 +1,111 @@
+# ===============================
+# NETWORKS
+# ===============================
+networks:
+  capstone-network:
+    driver: bridge
+    name: capstone-network
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+services:
+  product-mysql:
+    image: mysql:8.0
+    container_name: product-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${PRODUCT_DB_NAME}
+      MYSQL_USER: ${PRODUCT_DB_USERNAME}
+      MYSQL_PASSWORD: ${PRODUCT_DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${PRODUCT_DB_ROOT_PASSWORD}
+    command:
+      - --default-authentication-plugin=mysql_native_password
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    volumes:
+      - product-mysql-data:/var/lib/mysql
+    ports:
+      - "${PRODUCT_DB_PORT}:3306"
+    networks:
+      - capstone-network
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:9.2.0
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
+      - bootstrap.memory_lock=true
+    ports:
+      - "${ELASTICSEARCH_PORT}:9200"
+    networks:
+      - capstone-network
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://elasticsearch:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.4.0
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+    networks:
+      - capstone-network
+
+  kafka:
+    image: confluentinc/cp-kafka:7.4.0
+    container_name: kafka
+    environment:
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      ALLOW_PLAINTEXT_LISTENER: "yes"
+    networks:
+      - capstone-network
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+
+  product-service:
+    build: ./product-service
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:mysql://product-mysql:3306/${PRODUCT_DB_NAME}
+      SPRING_DATASOURCE_USERNAME: ${PRODUCT_DB_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${PRODUCT_DB_PASSWORD}
+      SPRING_ELASTICSEARCH_URIS: http://${ELASTICSEARCH_HOST}:${ELASTICSEARCH_PORT}
+      ELASTIC_USERNAME: ${ELASTIC_USERNAME}
+      ELASTIC_PASSWORD: ${ELASTIC_PASSWORD}
+      KAFKA_BROKER: kafka:9092
+      SERVICE_PORT: 8082
+    depends_on:
+      product-mysql:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+    ports:
+      - "8082:8082"
+    networks:
+      - capstone-network
+    volumes:
+      - ./product-service/logs:/app/logs
+      - ~/.m2:/root/.m2:ro
+
+volumes:
+  elasticsearch-data:
+  product-mysql-data:
