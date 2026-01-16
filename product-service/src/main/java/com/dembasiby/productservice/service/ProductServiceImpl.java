@@ -1,5 +1,6 @@
 package com.dembasiby.productservice.service;
 
+import com.dembasiby.productservice.document.ProductDocument;
 import com.dembasiby.productservice.dto.product.*;
 import com.dembasiby.productservice.exception.NotFoundException;
 import com.dembasiby.productservice.mapper.ProductMapper;
@@ -14,6 +15,7 @@ import lombok.AllArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -21,9 +23,13 @@ import java.util.List;
 @Service
 @AllArgsConstructor
 public class ProductServiceImpl implements ProductService {
+
     private final CategoryRepository categoryRepository;
     private final ProductRepository productRepository;
     private final ProductSpecificationRepository productSpecificationRepository;
+    private final KafkaTemplate<String, ProductDocument> kafkaTemplate;
+
+    private static final String TOPIC = "product-events";
 
     @Override
     public ProductDto createProduct(CreateProductDto createProductDto) {
@@ -39,6 +45,9 @@ public class ProductServiceImpl implements ProductService {
 
         productRepository.save(product);
 
+        // Publish to ES via Kafka
+        kafkaTemplate.send(TOPIC, ProductMapper.toProductDocument(product));
+
         return ProductMapper.toProductDto(product);
     }
 
@@ -46,46 +55,33 @@ public class ProductServiceImpl implements ProductService {
     public ProductDto getProduct(Long id) {
         return productRepository.findByIdAndIsDeletedFalse(id)
                 .map(ProductMapper::toProductDto)
-                .orElseThrow(()  -> new NotFoundException("Product not found"));
+                .orElseThrow(() -> new NotFoundException("Product not found"));
     }
 
     @Override
     public ProductDetailsDto getProductDetails(Long id) {
         return productRepository.findByIdAndIsDeletedFalse(id)
                 .map(ProductMapper::toProductDetailsDto)
-                .orElseThrow(()  -> new NotFoundException("Product not found"));
+                .orElseThrow(() -> new NotFoundException("Product not found"));
     }
 
     @Override
-    public Page<ProductDto> getProducts(
-            int pageNumber, int pageSize,
-            String sortBy, String sortDirection) {
-
+    public Page<ProductDto> getProducts(int pageNumber, int pageSize, String sortBy, String sortDirection) {
         Sort sort = sortDirection.equalsIgnoreCase("asc") ?
                 Sort.by(Sort.Direction.ASC, sortBy) :
                 Sort.by(Sort.Direction.DESC, sortBy);
-
         PageRequest pageRequest = PageRequest.of(pageNumber, pageSize, sort);
-
         return productRepository.findAllByIsDeletedFalse(pageRequest)
                 .map(ProductMapper::toProductDto);
     }
 
     @Override
-    public Page<ProductCategoryDto> getProductsByCategory(
-            Long categoryId, int pageNumber, int pageSize,
-            String sortBy, String sortDirection) {
-
+    public Page<ProductCategoryDto> getProductsByCategory(Long categoryId, int pageNumber, int pageSize, String sortBy, String sortDirection) {
         Sort sort = sortDirection.equalsIgnoreCase("asc") ?
                 Sort.by(Sort.Direction.ASC, sortBy) :
                 Sort.by(Sort.Direction.DESC, sortBy);
-
         PageRequest pageRequest = PageRequest.of(pageNumber, pageSize, sort);
-
-        return productRepository
-                .findAllByCategoryIdAndIsDeletedFalse(
-                        categoryId,
-                        pageRequest)
+        return productRepository.findAllByCategoryIdAndIsDeletedFalse(categoryId, pageRequest)
                 .map(ProductMapper::toProductCategoryDto);
     }
 
@@ -101,6 +97,9 @@ public class ProductServiceImpl implements ProductService {
 
         productRepository.save(product);
 
+        // Publish to ES via Kafka
+        kafkaTemplate.send(TOPIC, ProductMapper.toProductDocument(product));
+
         return ProductMapper.toProductDto(product);
     }
 
@@ -108,8 +107,14 @@ public class ProductServiceImpl implements ProductService {
     public void deleteProduct(Long id) {
         Product product = productRepository.findByIdAndIsDeletedFalse(id)
                 .orElseThrow(() -> new NotFoundException("Product not found"));
+
         product.setDeleted(true);
         productRepository.save(product);
+
+        // Mark as deleted in ES
+        ProductDocument doc = ProductMapper.toProductDocument(product);
+        doc.setDeleted(true);
+        kafkaTemplate.send(TOPIC, doc);
     }
 
     @Transactional
@@ -127,6 +132,9 @@ public class ProductServiceImpl implements ProductService {
         product.getProductSpecifications().add(productSpecification);
         productRepository.save(product);
 
+        // Update ES index
+        kafkaTemplate.send(TOPIC, ProductMapper.toProductDocument(product));
+
         return ProductMapper.toProductDetailsDto(product);
     }
 
@@ -137,6 +145,9 @@ public class ProductServiceImpl implements ProductService {
                 .orElseThrow(() -> new NotFoundException("Product not found"));
 
         productSpecificationRepository.deleteByIdAndProductId(specId, product.getId());
+
+        // Update ES index
+        kafkaTemplate.send(TOPIC, ProductMapper.toProductDocument(product));
     }
 
     @Override
