@@ -1,14 +1,18 @@
 package com.dembasiby.productservice.mapper;
 
-import com.dembasiby.productservice.dto.product.ProductCategoryDto;
-import com.dembasiby.productservice.dto.product.ProductDetailsDto;
-import com.dembasiby.productservice.dto.product.ProductDto;
-import com.dembasiby.productservice.dto.product.ProductSpecificationDto;
+import com.dembasiby.productservice.document.ProductDocument;
+import com.dembasiby.productservice.dto.product.*;
 import com.dembasiby.productservice.model.Product;
 import com.dembasiby.productservice.model.ProductSpecification;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.elasticsearch.core.SearchHit;
+import org.springframework.data.elasticsearch.core.SearchHits;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class ProductMapper {
 
@@ -21,8 +25,8 @@ public class ProductMapper {
                String.valueOf(product.getId()),
                product.getTitle(),
                product.getDescription(),
-               String.valueOf(product.getPrice()),
                product.getImageUrl(),
+               String.valueOf(product.getPrice()),
                product.getCategory().getId(),
                product.getCategory().getName()
        );
@@ -62,5 +66,37 @@ public class ProductMapper {
                String.valueOf(product.getPrice()),
                product.getImageUrl()
        );
+    }
+
+    public static ProductSearchDto toProductSearchDto(ProductDocument productDocument) {
+       return new ProductSearchDto(
+               String.valueOf(productDocument.getId()),
+               productDocument.getTitle(),
+               productDocument.getDescription(),
+               String.valueOf(productDocument.getPrice()),
+               productDocument.getImageUrl(),
+               productDocument.getCategoryName()
+       );
+    }
+
+    public static Page<ProductSearchDto> toPage(SearchHits<ProductDocument> hits, Pageable pageable) {
+       List<ProductSearchDto> dtos = hits.stream()
+               .map(SearchHit::getContent)
+               .map(ProductMapper::toProductSearchDto)
+               .collect(Collectors.toList());
+
+       return new PageImpl(dtos, pageable, hits.getTotalHits());
+    }
+
+    public static ProductDocument toProductDocument(Product product) {
+        return new ProductDocument(
+                product.getId(),
+                product.getTitle(),
+                product.getDescription(),
+                product.getPrice(),
+                product.getImageUrl(),
+                product.getCategory().getName(),
+                product.isDeleted()
+        );
     }
 }
