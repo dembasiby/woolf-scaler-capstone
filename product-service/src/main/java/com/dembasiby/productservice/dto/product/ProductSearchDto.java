@@ -7,6 +7,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.math.BigDecimal;
+
 @Getter
 @Setter
 @NoArgsConstructor
@@ -16,6 +18,6 @@ public class ProductSearchDto {
     private String title;
     private String description;
     private String imageUrl;
-    private String price;
+    private BigDecimal price;
     private String categoryName;
 }

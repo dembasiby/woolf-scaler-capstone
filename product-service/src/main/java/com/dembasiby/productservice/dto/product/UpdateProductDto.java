@@ -7,6 +7,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 import java.io.Serializable;
+import java.math.BigDecimal;
 
 /**
  * DTO for {@link com.dembasiby.productservice.model.Product}
@@ -19,6 +20,6 @@ public class UpdateProductDto implements Serializable {
     private final String description;
     @NotNull
     @Positive
-    private final Double price;
+    private final BigDecimal price;
     private final String imageUrl;
 }
