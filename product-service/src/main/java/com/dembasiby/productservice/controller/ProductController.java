@@ -13,12 +13,12 @@ import java.net.URI;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/products")
+//@RequestMapping("/api/products")
 @AllArgsConstructor
 public class ProductController {
     private final ProductService productService;
 
-    @PostMapping
+    @PostMapping("/")
     public ResponseEntity<ProductDto> createProduct(@Valid @RequestBody CreateProductDto product) {
         ProductDto productDto = productService.createProduct(product);
 
@@ -58,7 +58,7 @@ public class ProductController {
         return ResponseEntity.ok(productService.listSpecifications(id));
     }
 
-    @GetMapping
+    @GetMapping("/")
     public ResponseEntity<Page<ProductDto>> getAllProducts(
             @RequestParam(required = false, defaultValue = "0") int pageNumber,
             @RequestParam(required = false, defaultValue = "10") int pageSize,
