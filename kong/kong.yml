@@ -57,6 +57,20 @@ services:
           - DELETE
           - OPTIONS
 
+  - name: notification-service
+    url: http://notification-service:8090
+    routes:
+      - name: notification-routes
+        paths:
+          - /api/notifications
+        strip_path: true
+        methods:
+          - GET
+          - POST
+          - PUT
+          - DELETE
+          - OPTIONS
+
 plugins:
   - name: proxy-cache
     config:
