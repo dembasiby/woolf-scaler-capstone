@@ -19,6 +19,7 @@ volumes:
   cart-redis-data:
   order-mysql-data:
   payment-mysql-data:
+  notification-mysql-data:
 
 # ===============================
 # SERVICES
@@ -48,6 +49,7 @@ services:
       - cart-service
       - order-service
       - payment-service
+      - notification-service
 
 
   product-mysql:
@@ -302,6 +304,69 @@ services:
       - capstone-network
     volumes:
       - ./payment-service/logs:/app/logs
+      - ~/.m2:/root/.m2:ro
+    restart: on-failure
+
+  notification-mysql:
+    image: mysql:8.0
+    container_name: notification-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${NOTIFICATION_DB_NAME}
+      MYSQL_USER: ${NOTIFICATION_DB_USERNAME}
+      MYSQL_PASSWORD: ${NOTIFICATION_DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${PRODUCT_DB_ROOT_PASSWORD}
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+    command:
+      - --default-authentication-plugin=mysql_native_password
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    volumes:
+      - notification-mysql-data:/var/lib/mysql
+    ports:
+      - "${NOTIFICATION_DB_PORT}:3306"
+    networks:
+      - capstone-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 25
+      start_period: 60s
+
+  notification-service:
+    build: ./notification-service
+    container_name: notification-service
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SERVICE_PORT: 8090
+      SPRING_DATASOURCE_URL: jdbc:mysql://notification-mysql:3306/${NOTIFICATION_DB_NAME}
+      SPRING_DATASOURCE_USERNAME: ${NOTIFICATION_DB_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${NOTIFICATION_DB_PASSWORD}
+      KAFKA_BROKER: kafka:9092
+      AWS_REGION: ${AWS_REGION}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_SES_SENDER_EMAIL: ${AWS_SES_SENDER_EMAIL}
+      KONG_GATEWAY_URL: http://kong:8000
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+    depends_on:
+      notification-mysql:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    ports:
+      - "8090:8090"
+    networks:
+      - capstone-network
+    volumes:
+      - ./notification-service/logs:/app/logs
       - ~/.m2:/root/.m2:ro
     restart: on-failure
 
