@@ -20,6 +20,7 @@ volumes:
   order-mysql-data:
   payment-mysql-data:
   notification-mysql-data:
+  user-mysql-data:
 
 # ===============================
 # SERVICES
@@ -50,6 +51,7 @@ services:
       - order-service
       - payment-service
       - notification-service
+      - user-service
 
 
   product-mysql:
@@ -367,6 +369,66 @@ services:
       - capstone-network
     volumes:
       - ./notification-service/logs:/app/logs
+      - ~/.m2:/root/.m2:ro
+    restart: on-failure
+
+  user-mysql:
+    image: mysql:8.0
+    container_name: user-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${USER_DB_NAME}
+      MYSQL_USER: ${USER_DB_USERNAME}
+      MYSQL_PASSWORD: ${USER_DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${PRODUCT_DB_ROOT_PASSWORD}
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+    command:
+      - --default-authentication-plugin=mysql_native_password
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    volumes:
+      - user-mysql-data:/var/lib/mysql
+    ports:
+      - "${USER_DB_PORT}:3306"
+    networks:
+      - capstone-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 25
+      start_period: 60s
+
+  user-service:
+    build: ./user-service
+    container_name: user-service
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SERVICE_PORT: 8081
+      SPRING_DATASOURCE_URL: jdbc:mysql://user-mysql:3306/${USER_DB_NAME}
+      SPRING_DATASOURCE_USERNAME: ${USER_DB_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${USER_DB_PASSWORD}
+      KAFKA_BROKER: kafka:9092
+      JWT_SECRET: ${JWT_SECRET}
+      KONG_GATEWAY_URL: http://kong:8000
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+    depends_on:
+      user-mysql:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    ports:
+      - "8081:8081"
+    networks:
+      - capstone-network
+    volumes:
+      - ./user-service/logs:/app/logs
       - ~/.m2:/root/.m2:ro
     restart: on-failure
 
