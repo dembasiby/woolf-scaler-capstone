@@ -18,6 +18,7 @@ volumes:
   cart-mongo-data:
   cart-redis-data:
   order-mysql-data:
+  payment-mysql-data:
 
 # ===============================
 # SERVICES
@@ -46,6 +47,7 @@ services:
       - product-service
       - cart-service
       - order-service
+      - payment-service
 
 
   product-mysql:
@@ -239,6 +241,67 @@ services:
       - capstone-network
     volumes:
       - ./order-service/logs:/app/logs
+      - ~/.m2:/root/.m2:ro
+    restart: on-failure
+
+  payment-mysql:
+    image: mysql:8.0
+    container_name: payment-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${PAYMENT_DB_NAME}
+      MYSQL_USER: ${PAYMENT_DB_USERNAME}
+      MYSQL_PASSWORD: ${PAYMENT_DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${PRODUCT_DB_ROOT_PASSWORD}
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+    command:
+      - --default-authentication-plugin=mysql_native_password
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    volumes:
+      - payment-mysql-data:/var/lib/mysql
+    ports:
+      - "${PAYMENT_DB_PORT}:3306"
+    networks:
+      - capstone-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 25
+      start_period: 60s
+
+  payment-service:
+    build: ./payment-service
+    container_name: payment-service
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SERVICE_PORT: 8088
+      SPRING_DATASOURCE_URL: jdbc:mysql://payment-mysql:3306/${PAYMENT_DB_NAME}
+      SPRING_DATASOURCE_USERNAME: ${PAYMENT_DB_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${PAYMENT_DB_PASSWORD}
+      KAFKA_BROKER: kafka:9092
+      STRIPE_API_KEY: ${STRIPE_API_KEY}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
+      KONG_GATEWAY_URL: http://kong:8000
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+    depends_on:
+      payment-mysql:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    ports:
+      - "8088:8088"
+    networks:
+      - capstone-network
+    volumes:
+      - ./payment-service/logs:/app/logs
       - ~/.m2:/root/.m2:ro
     restart: on-failure
 
