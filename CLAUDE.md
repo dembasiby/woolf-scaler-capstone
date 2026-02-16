@@ -102,3 +102,18 @@ All infrastructure runs via `docker-compose.yaml` on a shared `capstone-network`
 ## Testing
 
 User-service has unit tests (`UserServiceImplTest`, `JwtServiceTest`, `UserControllerTest`). Other services have boilerplate Spring Boot `ApplicationTests` stubs only. Swagger UI available at `http://localhost:{port}/swagger-ui.html` for manual API testing.
+
+**Test configuration conventions** (see `user-service/src/test/resources/application.properties` as reference):
+- H2 in-memory database: `jdbc:h2:mem:testdb` with `org.h2.Driver`
+- Exclude Kafka auto-config: `spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration`
+- Use `server.port=0` for dynamic port assignment
+
+## Spring Boot 4.0.0 Testing Notes
+
+This project uses Spring Boot 4.0.0 which has breaking changes from 3.x for tests:
+
+- **`@WebMvcTest`** moved to `org.springframework.boot.webmvc.test.autoconfigure` (requires `spring-boot-webmvc-test` dependency, separate from `spring-boot-starter-test`)
+- **`@MockBean` is removed** — use `@MockitoBean` from `org.springframework.test.context.bean.override.mockito`
+- **`ObjectMapper` is not auto-provided** in `@WebMvcTest` context — use `new ObjectMapper()` directly
+- **Spring Security defaults to 403** (not 401) for unauthenticated requests in `@WebMvcTest`; use `SecurityMockMvcRequestPostProcessors.authentication()` for authenticated test requests
+- All services use `spring-boot-starter-webmvc` (not `spring-boot-starter-web`)
