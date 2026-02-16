@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @Entity
@@ -15,7 +16,7 @@ import java.util.List;
 public class Product extends BaseModel {
     private String title;
     private String description;
-    private Double price;
+    private BigDecimal price;
     private String imageUrl;
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "product")
     private List<ProductSpecification> productSpecifications;

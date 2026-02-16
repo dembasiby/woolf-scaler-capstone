@@ -8,7 +8,44 @@ networks:
     ipam:
       config:
         - subnet: 172.20.0.0/16
+
+# ===============================
+# VOLUMES
+# ===============================
+volumes:
+  elasticsearch-data:
+  product-mysql-data:
+  cart-mongo-data:
+  cart-redis-data:
+
+# ===============================
+# SERVICES
+# ===============================
 services:
+  kong:
+    image: kong:3.6
+    container_name: kong
+    restart: unless-stopped
+    environment:
+      KONG_DATABASE: "off"
+      KONG_DECLARATIVE_CONFIG: /kong/kong.yml
+      KONG_PROXY_ACCESS_LOG: /dev/stdout
+      KONG_ADMIN_ACCESS_LOG: /dev/stdout
+      KONG_PROXY_ERROR_LOG: /dev/stderr
+      KONG_ADMIN_ERROR_LOG: /dev/stderr
+      KONG_ADMIN_LISTEN: 0.0.0.0:8001
+    volumes:
+      - ./kong/kong.yml:/kong/kong.yml:ro
+    ports:
+      - "8000:8000"   # Public gateway
+      - "8001:8001"   # Admin API (dev only)
+    networks:
+      - capstone-network
+    depends_on:
+      - product-service
+      - cart-service
+
+
   product-mysql:
     image: mysql:8.0
     container_name: product-mysql
@@ -18,6 +55,10 @@ services:
       MYSQL_USER: ${PRODUCT_DB_USERNAME}
       MYSQL_PASSWORD: ${PRODUCT_DB_PASSWORD}
       MYSQL_ROOT_PASSWORD: ${PRODUCT_DB_ROOT_PASSWORD}
+    deploy:
+      resources:
+        limits:
+          memory: 512M
     command:
       - --default-authentication-plugin=mysql_native_password
       - --character-set-server=utf8mb4
@@ -29,18 +70,24 @@ services:
     networks:
       - capstone-network
     healthcheck:
-      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}" ]
-      interval: 30s
-      timeout: 10s
-      retries: 5
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 25
+      start_period: 60s
 
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:9.2.0
+    container_name: elasticsearch
     environment:
       - discovery.type=single-node
       - xpack.security.enabled=false
-      - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
+      - "ES_JAVA_OPTS=-Xms256m -Xmx256m"
       - bootstrap.memory_lock=true
+    deploy:
+      resources:
+        limits:
+          memory: 1G
     ports:
       - "${ELASTICSEARCH_PORT}:9200"
     networks:
@@ -50,54 +97,81 @@ services:
         soft: -1
         hard: -1
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://elasticsearch:9200/_cluster/health || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 30s
 
   zookeeper:
     image: confluentinc/cp-zookeeper:7.4.0
+    container_name: zookeeper
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
+    deploy:
+      resources:
+        limits:
+          memory: 256M
     networks:
       - capstone-network
+    healthcheck:
+      test: ["CMD", "bash", "-c", "echo ruok | timeout 5 nc localhost 2181"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 20s
 
   kafka:
     image: confluentinc/cp-kafka:7.4.0
     container_name: kafka
     environment:
-      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       ALLOW_PLAINTEXT_LISTENER: "yes"
+    deploy:
+      resources:
+        limits:
+          memory: 512M
     networks:
       - capstone-network
     depends_on:
       - zookeeper
+#        condition: service_healthy
     ports:
       - "9092:9092"
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-topics --bootstrap-server localhost:9092 --list"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 30s
 
   product-service:
     build: ./product-service
+    container_name: product-service
     environment:
       SPRING_PROFILES_ACTIVE: docker
+      SERVICE_PORT: 8082
       SPRING_DATASOURCE_URL: jdbc:mysql://product-mysql:3306/${PRODUCT_DB_NAME}
       SPRING_DATASOURCE_USERNAME: ${PRODUCT_DB_USERNAME}
       SPRING_DATASOURCE_PASSWORD: ${PRODUCT_DB_PASSWORD}
-      SPRING_ELASTICSEARCH_URIS: http://${ELASTICSEARCH_HOST}:${ELASTICSEARCH_PORT}
-      ELASTIC_USERNAME: ${ELASTIC_USERNAME}
-      ELASTIC_PASSWORD: ${ELASTIC_PASSWORD}
+      SPRING_ELASTICSEARCH_URIS: http://elasticsearch:9200
       KAFKA_BROKER: kafka:9092
-      SERVICE_PORT: 8082
+      KONG_GATEWAY_URL: http://kong:8000
+      KONG_API_KEY: ${PRODUCT_SERVICE_API_KEY:-product-key-123}
+    deploy:
+      resources:
+        limits:
+          memory: 512M
     depends_on:
       product-mysql:
         condition: service_healthy
       elasticsearch:
         condition: service_healthy
       kafka:
-        condition: service_started
+        condition: service_healthy
     ports:
       - "8082:8082"
     networks:
@@ -105,7 +179,80 @@ services:
     volumes:
       - ./product-service/logs:/app/logs
       - ~/.m2:/root/.m2:ro
+    restart: on-failure
 
-volumes:
-  elasticsearch-data:
-  product-mysql-data:
+  cart-mongo:
+    image: mongo:7.0
+    container_name: cart-mongo
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_DATABASE: ${CART_DB_NAME}
+      MONGO_INITDB_ROOT_USERNAME: ${CART_DB_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${CART_DB_ROOT_PASSWORD}
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+    ports:
+      - "${CART_DB_PORT}:27017"
+    volumes:
+      - cart-mongo-data:/data/db
+    networks:
+      - capstone-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 5s
+      retries: 15
+      start_period: 15s
+
+  cart-redis:
+    image: redis:7.2-alpine
+    container_name: cart-redis
+    restart: unless-stopped
+    command: redis-server --requirepass ${REDIS_PASSWORD}
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+    ports:
+      - "${REDIS_PORT}:6379"
+    volumes:
+      - cart-redis-data:/data
+    networks:
+      - capstone-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 15
+      start_period: 5s
+
+  cart-service:
+    build: ./cart-service
+    container_name: cart-service
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SERVICE_PORT: 8084
+      SPRING_DATA_MONGODB_URI: mongodb://${CART_DB_ROOT_USERNAME}:${CART_DB_ROOT_PASSWORD}@cart-mongo:27017/${CART_DB_NAME}?authSource=admin
+      SPRING_DATA_REDIS_HOST: cart-redis
+      SPRING_DATA_REDIS_PORT: ${REDIS_PORT}
+      SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD}
+      KONG_GATEWAY_URL: http://kong:8000
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+    depends_on:
+      cart-mongo:
+        condition: service_healthy
+      cart-redis:
+        condition: service_healthy
+    ports:
+      - "8084:8084"
+    networks:
+      - capstone-network
+    volumes:
+      - ./cart-service/logs:/app/logs
+      - ~/.m2:/root/.m2:ro
+    restart: on-failure

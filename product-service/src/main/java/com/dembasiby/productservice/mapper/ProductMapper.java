@@ -10,6 +10,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.elasticsearch.core.SearchHit;
 import org.springframework.data.elasticsearch.core.SearchHits;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -26,7 +27,7 @@ public class ProductMapper {
                product.getTitle(),
                product.getDescription(),
                product.getImageUrl(),
-               String.valueOf(product.getPrice()),
+               product.getPrice(),
                product.getCategory().getId(),
                product.getCategory().getName()
        );
@@ -40,7 +41,7 @@ public class ProductMapper {
        productDetailsDto.setImageUrl(product.getImageUrl());
        productDetailsDto.setCategoryId(product.getCategory().getId());
        productDetailsDto.setCategoryName(product.getCategory().getName());
-       productDetailsDto.setPrice(String.valueOf(product.getPrice()));
+       productDetailsDto.setPrice(product.getPrice());
        List<ProductSpecificationDto>  productSpecificationDtos = new ArrayList<>();
 
        for  (ProductSpecification productSpecification : product.getProductSpecifications()) {
@@ -63,20 +64,21 @@ public class ProductMapper {
                String.valueOf(product.getId()),
                product.getTitle(),
                product.getDescription(),
-               String.valueOf(product.getPrice()),
+               product.getPrice(),
                product.getImageUrl()
        );
     }
 
     public static ProductSearchDto toProductSearchDto(ProductDocument productDocument) {
-       return new ProductSearchDto(
-               String.valueOf(productDocument.getId()),
-               productDocument.getTitle(),
-               productDocument.getDescription(),
-               String.valueOf(productDocument.getPrice()),
-               productDocument.getImageUrl(),
-               productDocument.getCategoryName()
-       );
+        ProductSearchDto pSDto = new ProductSearchDto();
+        pSDto.setId(String.valueOf(productDocument.getId()));
+        pSDto.setTitle(productDocument.getTitle());
+        pSDto.setDescription(productDocument.getDescription());
+        pSDto.setImageUrl(productDocument.getImageUrl());
+        pSDto.setPrice(BigDecimal.valueOf(productDocument.getPrice()));
+        pSDto.setCategoryName(productDocument.getCategoryName());
+
+        return pSDto;
     }
 
     public static Page<ProductSearchDto> toPage(SearchHits<ProductDocument> hits, Pageable pageable) {
@@ -89,14 +91,15 @@ public class ProductMapper {
     }
 
     public static ProductDocument toProductDocument(Product product) {
-        return new ProductDocument(
-                product.getId(),
-                product.getTitle(),
-                product.getDescription(),
-                product.getPrice(),
-                product.getImageUrl(),
-                product.getCategory().getName(),
-                product.isDeleted()
-        );
+        ProductDocument productDocument = new ProductDocument();
+        productDocument.setId(product.getId());
+        productDocument.setTitle(product.getTitle());
+        productDocument.setDescription(product.getDescription());
+        productDocument.setPrice(Double.valueOf(product.getPrice().toString()));
+        productDocument.setImageUrl(product.getImageUrl());
+        productDocument.setCategoryName(product.getCategory().getName());
+        productDocument.setDeleted(product.isDeleted());
+
+        return productDocument;
     }
 }

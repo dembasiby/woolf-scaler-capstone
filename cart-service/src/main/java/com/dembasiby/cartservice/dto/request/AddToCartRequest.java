@@ -1,7 +1,7 @@
-package com.dembasiby.productservice.dto.product;
+package com.dembasiby.cartservice.dto.request;
 
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -13,18 +13,15 @@ import java.math.BigDecimal;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class ProductDto {
+public class AddToCartRequest {
     @NotBlank
-    private String id;
-    @NotBlank
-    private String title;
-    private String description;
-    private String imageUrl;
-    @NotNull
-    private BigDecimal price;
+    private String productId;
 
-    @NotNull
-    private long categoryId;
-    @NotBlank
-    private String categoryName;
+    @Min(1)
+    private Integer quantity = 1;
+
+    // These will be populated by calling Product Service (or via async event)
+    private String productName;
+    private String imageUrl;
+    private BigDecimal price;
 }
