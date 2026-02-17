@@ -169,6 +169,7 @@ services:
       KAFKA_BROKER: kafka:9092
       KONG_GATEWAY_URL: http://kong:8000
       KONG_API_KEY: ${PRODUCT_SERVICE_API_KEY:-product-key-123}
+      JWT_SECRET: ${JWT_SECRET}
     deploy:
       resources:
         limits:
@@ -230,6 +231,7 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${ORDER_DB_PASSWORD}
       KAFKA_BROKER: kafka:9092
       KONG_GATEWAY_URL: http://kong:8000
+      JWT_SECRET: ${JWT_SECRET}
     deploy:
       resources:
         limits:
@@ -291,6 +293,7 @@ services:
       STRIPE_API_KEY: ${STRIPE_API_KEY}
       STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
       KONG_GATEWAY_URL: http://kong:8000
+      JWT_SECRET: ${JWT_SECRET}
     deploy:
       resources:
         limits:
@@ -354,6 +357,7 @@ services:
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
       AWS_SES_SENDER_EMAIL: ${AWS_SES_SENDER_EMAIL}
       KONG_GATEWAY_URL: http://kong:8000
+      JWT_SECRET: ${JWT_SECRET}
     deploy:
       resources:
         limits:
@@ -490,6 +494,7 @@ services:
       SPRING_DATA_REDIS_PORT: ${REDIS_PORT}
       SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD}
       KONG_GATEWAY_URL: http://kong:8000
+      JWT_SECRET: ${JWT_SECRET}
     deploy:
       resources:
         limits:

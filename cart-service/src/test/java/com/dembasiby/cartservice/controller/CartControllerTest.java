@@ -1,5 +1,8 @@
 package com.dembasiby.cartservice.controller;
 
+import com.dembasiby.cartservice.config.JwtAuthenticationFilter;
+import com.dembasiby.cartservice.config.JwtService;
+import com.dembasiby.cartservice.config.SecurityConfig;
 import com.dembasiby.cartservice.dto.request.AddToCartRequest;
 import com.dembasiby.cartservice.dto.response.CartDto;
 import com.dembasiby.cartservice.dto.response.CartItemDto;
@@ -8,7 +11,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -17,10 +22,12 @@ import java.util.List;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(CartController.class)
+@Import({SecurityConfig.class, JwtAuthenticationFilter.class, JwtService.class})
 class CartControllerTest {
 
     @Autowired
@@ -31,10 +38,14 @@ class CartControllerTest {
     @MockitoBean
     private CartService cartService;
 
+    private UsernamePasswordAuthenticationToken authToken() {
+        return new UsernamePasswordAuthenticationToken(1L, null, List.of());
+    }
+
     @Test
     void getCart_returns200() throws Exception {
         CartDto response = CartDto.builder()
-                .userId("user-1")
+                .userId("1")
                 .items(List.of(CartItemDto.builder()
                         .productId("prod-1")
                         .productName("Test Product")
@@ -43,12 +54,19 @@ class CartControllerTest {
                         .build()))
                 .build();
 
-        when(cartService.getCart("user-1")).thenReturn(response);
+        when(cartService.getCart("1")).thenReturn(response);
 
-        mockMvc.perform(get("/user-1"))
+        mockMvc.perform(get("/")
+                        .with(authentication(authToken())))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.userId").value("user-1"))
+                .andExpect(jsonPath("$.userId").value("1"))
                 .andExpect(jsonPath("$.items[0].productId").value("prod-1"));
+    }
+
+    @Test
+    void getCart_returns403WhenUnauthenticated() throws Exception {
+        mockMvc.perform(get("/"))
+                .andExpect(status().isForbidden());
     }
 
     @Test
@@ -58,7 +76,7 @@ class CartControllerTest {
         request.setQuantity(2);
 
         CartDto response = CartDto.builder()
-                .userId("user-1")
+                .userId("1")
                 .items(List.of(CartItemDto.builder()
                         .productId("prod-1")
                         .productName("Test Product")
@@ -67,9 +85,10 @@ class CartControllerTest {
                         .build()))
                 .build();
 
-        when(cartService.addToCart(eq("user-1"), any(AddToCartRequest.class))).thenReturn(response);
+        when(cartService.addToCart(eq("1"), any(AddToCartRequest.class))).thenReturn(response);
 
-        mockMvc.perform(post("/user-1/items")
+        mockMvc.perform(post("/items")
+                        .with(authentication(authToken()))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
@@ -79,7 +98,7 @@ class CartControllerTest {
     @Test
     void updateItemQuantity_returns200() throws Exception {
         CartDto response = CartDto.builder()
-                .userId("user-1")
+                .userId("1")
                 .items(List.of(CartItemDto.builder()
                         .productId("prod-1")
                         .productName("Test Product")
@@ -88,9 +107,10 @@ class CartControllerTest {
                         .build()))
                 .build();
 
-        when(cartService.updateItemQuantity("user-1", "prod-1", 5)).thenReturn(response);
+        when(cartService.updateItemQuantity("1", "prod-1", 5)).thenReturn(response);
 
-        mockMvc.perform(put("/user-1/items/prod-1")
+        mockMvc.perform(put("/items/prod-1")
+                        .with(authentication(authToken()))
                         .param("quantity", "5"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items[0].quantity").value(5));
@@ -99,13 +119,14 @@ class CartControllerTest {
     @Test
     void removeItem_returns200() throws Exception {
         CartDto response = CartDto.builder()
-                .userId("user-1")
+                .userId("1")
                 .items(List.of())
                 .build();
 
-        when(cartService.removeItem("user-1", "prod-1")).thenReturn(response);
+        when(cartService.removeItem("1", "prod-1")).thenReturn(response);
 
-        mockMvc.perform(delete("/user-1/items/prod-1"))
+        mockMvc.perform(delete("/items/prod-1")
+                        .with(authentication(authToken())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items").isEmpty());
     }

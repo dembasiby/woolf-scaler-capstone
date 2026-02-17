@@ -7,7 +7,7 @@ import com.dembasiby.orderservice.model.OrderStatus;
 import java.util.List;
 
 public interface OrderService {
-    OrderDto createOrder(CreateOrderRequest request);
+    OrderDto createOrder(CreateOrderRequest request, String userId);
     OrderDto getOrderById(Long orderId);
     List<OrderDto> getOrdersByUserId(String userId);
     OrderDto updateOrderStatus(Long orderId, OrderStatus status);

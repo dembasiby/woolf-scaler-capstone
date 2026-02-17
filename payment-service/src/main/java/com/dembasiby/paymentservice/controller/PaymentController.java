@@ -7,6 +7,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -19,8 +20,10 @@ public class PaymentController {
     private final PaymentService paymentService;
 
     @PostMapping
-    public ResponseEntity<PaymentDto> createPayment(@Valid @RequestBody CreatePaymentRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(paymentService.createPayment(request));
+    public ResponseEntity<PaymentDto> createPayment(Authentication authentication,
+                                                     @Valid @RequestBody CreatePaymentRequest request) {
+        String userId = authentication.getPrincipal().toString();
+        return ResponseEntity.status(HttpStatus.CREATED).body(paymentService.createPayment(request, userId));
     }
 
     @GetMapping("/{paymentId}")
@@ -33,8 +36,9 @@ public class PaymentController {
         return ResponseEntity.ok(paymentService.getPaymentByOrderId(orderId));
     }
 
-    @GetMapping("/user/{userId}")
-    public ResponseEntity<List<PaymentDto>> getPaymentsByUserId(@PathVariable String userId) {
+    @GetMapping("/my")
+    public ResponseEntity<List<PaymentDto>> getMyPayments(Authentication authentication) {
+        String userId = authentication.getPrincipal().toString();
         return ResponseEntity.ok(paymentService.getPaymentsByUserId(userId));
     }
 }

@@ -6,7 +6,7 @@ import com.dembasiby.paymentservice.dto.response.PaymentDto;
 import java.util.List;
 
 public interface PaymentService {
-    PaymentDto createPayment(CreatePaymentRequest request);
+    PaymentDto createPayment(CreatePaymentRequest request, String userId);
     PaymentDto getPaymentById(Long paymentId);
     PaymentDto getPaymentByOrderId(Long orderId);
     List<PaymentDto> getPaymentsByUserId(String userId);

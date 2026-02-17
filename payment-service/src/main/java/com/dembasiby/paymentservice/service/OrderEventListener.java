@@ -23,14 +23,14 @@ public class OrderEventListener {
         if ("ORDER_CONFIRMED".equals(type)) {
             log.info("Order confirmed event received for order: {}", event.get("orderId"));
 
+            String userId = (String) event.get("userId");
             CreatePaymentRequest request = CreatePaymentRequest.builder()
                     .orderId(((Number) event.get("orderId")).longValue())
-                    .userId((String) event.get("userId"))
                     .amount(new BigDecimal(event.get("totalAmount").toString()))
                     .currency("USD")
                     .build();
 
-            paymentService.createPayment(request);
+            paymentService.createPayment(request, userId);
             log.info("Payment initiated for order: {}", event.get("orderId"));
         }
     }

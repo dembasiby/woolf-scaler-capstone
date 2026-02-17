@@ -1,8 +1,10 @@
 package com.dembasiby.notificationservice.controller;
 
+import com.dembasiby.notificationservice.config.JwtAuthenticationFilter;
+import com.dembasiby.notificationservice.config.JwtService;
+import com.dembasiby.notificationservice.config.SecurityConfig;
 import com.dembasiby.notificationservice.dto.request.SendNotificationRequest;
 import com.dembasiby.notificationservice.dto.response.NotificationDto;
-import com.dembasiby.notificationservice.exception.NotFoundException;
 import com.dembasiby.notificationservice.model.NotificationChannel;
 import com.dembasiby.notificationservice.model.NotificationStatus;
 import com.dembasiby.notificationservice.service.NotificationService;
@@ -10,7 +12,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -18,10 +22,12 @@ import java.util.List;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(NotificationController.class)
+@Import({SecurityConfig.class, JwtAuthenticationFilter.class, JwtService.class})
 class NotificationControllerTest {
 
     @Autowired
@@ -31,6 +37,10 @@ class NotificationControllerTest {
 
     @MockitoBean
     private NotificationService notificationService;
+
+    private UsernamePasswordAuthenticationToken authToken() {
+        return new UsernamePasswordAuthenticationToken(1L, null, List.of());
+    }
 
     @Test
     void sendNotification_returns201() throws Exception {
@@ -57,11 +67,28 @@ class NotificationControllerTest {
         when(notificationService.sendNotification(any(SendNotificationRequest.class))).thenReturn(response);
 
         mockMvc.perform(post("/notifications")
+                        .with(authentication(authToken()))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.userId").value("user-1"))
                 .andExpect(jsonPath("$.status").value("SENT"));
+    }
+
+    @Test
+    void sendNotification_returns403WhenUnauthenticated() throws Exception {
+        SendNotificationRequest request = SendNotificationRequest.builder()
+                .userId("user-1")
+                .recipientEmail("user@example.com")
+                .subject("Test")
+                .body("Body")
+                .eventType("ORDER_CONFIRMED")
+                .build();
+
+        mockMvc.perform(post("/notifications")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isForbidden());
     }
 
     @Test
@@ -75,6 +102,7 @@ class NotificationControllerTest {
                 .build();
 
         mockMvc.perform(post("/notifications")
+                        .with(authentication(authToken()))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
@@ -84,7 +112,7 @@ class NotificationControllerTest {
     void getNotificationById_returns200() throws Exception {
         NotificationDto response = NotificationDto.builder()
                 .id(1L)
-                .userId("user-1")
+                .userId("1")
                 .recipientEmail("user@example.com")
                 .channel(NotificationChannel.EMAIL)
                 .status(NotificationStatus.SENT)
@@ -92,26 +120,28 @@ class NotificationControllerTest {
 
         when(notificationService.getNotificationById(1L)).thenReturn(response);
 
-        mockMvc.perform(get("/notifications/1"))
+        mockMvc.perform(get("/notifications/1")
+                        .with(authentication(authToken())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1))
-                .andExpect(jsonPath("$.userId").value("user-1"));
+                .andExpect(jsonPath("$.userId").value("1"));
     }
 
     @Test
-    void getNotificationsByUserId_returns200() throws Exception {
+    void getMyNotifications_returns200() throws Exception {
         NotificationDto response = NotificationDto.builder()
                 .id(1L)
-                .userId("user-1")
+                .userId("1")
                 .recipientEmail("user@example.com")
                 .channel(NotificationChannel.EMAIL)
                 .status(NotificationStatus.SENT)
                 .build();
 
-        when(notificationService.getNotificationsByUserId("user-1")).thenReturn(List.of(response));
+        when(notificationService.getNotificationsByUserId("1")).thenReturn(List.of(response));
 
-        mockMvc.perform(get("/notifications/user/user-1"))
+        mockMvc.perform(get("/notifications/my")
+                        .with(authentication(authToken())))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].userId").value("user-1"));
+                .andExpect(jsonPath("$[0].userId").value("1"));
     }
 }

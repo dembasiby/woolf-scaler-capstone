@@ -59,7 +59,6 @@ class PaymentServiceImplTest {
     void createPayment_success() {
         CreatePaymentRequest request = CreatePaymentRequest.builder()
                 .orderId(100L)
-                .userId("user-1")
                 .amount(new BigDecimal("99.99"))
                 .currency("USD")
                 .build();
@@ -74,7 +73,7 @@ class PaymentServiceImplTest {
             return p;
         });
 
-        PaymentDto result = paymentService.createPayment(request);
+        PaymentDto result = paymentService.createPayment(request, "user-1");
 
         assertNotNull(result);
         assertEquals(PaymentStatus.COMPLETED, result.getStatus());
@@ -86,7 +85,6 @@ class PaymentServiceImplTest {
     void createPayment_stripeFailure() {
         CreatePaymentRequest request = CreatePaymentRequest.builder()
                 .orderId(100L)
-                .userId("user-1")
                 .amount(new BigDecimal("99.99"))
                 .currency("USD")
                 .build();
@@ -94,7 +92,7 @@ class PaymentServiceImplTest {
         when(stripeService.createPaymentIntent(any(), anyString()))
                 .thenThrow(new PaymentException("Payment processing failed"));
 
-        assertThrows(PaymentException.class, () -> paymentService.createPayment(request));
+        assertThrows(PaymentException.class, () -> paymentService.createPayment(request, "user-1"));
     }
 
     @Test

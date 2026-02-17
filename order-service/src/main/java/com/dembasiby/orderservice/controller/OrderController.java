@@ -8,6 +8,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -20,8 +21,10 @@ public class OrderController {
     private final OrderService orderService;
 
     @PostMapping
-    public ResponseEntity<OrderDto> createOrder(@Valid @RequestBody CreateOrderRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(orderService.createOrder(request));
+    public ResponseEntity<OrderDto> createOrder(Authentication authentication,
+                                                 @Valid @RequestBody CreateOrderRequest request) {
+        String userId = authentication.getPrincipal().toString();
+        return ResponseEntity.status(HttpStatus.CREATED).body(orderService.createOrder(request, userId));
     }
 
     @GetMapping("/{orderId}")
@@ -29,8 +32,9 @@ public class OrderController {
         return ResponseEntity.ok(orderService.getOrderById(orderId));
     }
 
-    @GetMapping("/user/{userId}")
-    public ResponseEntity<List<OrderDto>> getOrdersByUserId(@PathVariable String userId) {
+    @GetMapping("/my")
+    public ResponseEntity<List<OrderDto>> getMyOrders(Authentication authentication) {
+        String userId = authentication.getPrincipal().toString();
         return ResponseEntity.ok(orderService.getOrdersByUserId(userId));
     }
 

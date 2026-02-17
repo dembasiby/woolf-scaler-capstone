@@ -1,5 +1,8 @@
 package com.dembasiby.orderservice.controller;
 
+import com.dembasiby.orderservice.config.JwtAuthenticationFilter;
+import com.dembasiby.orderservice.config.JwtService;
+import com.dembasiby.orderservice.config.SecurityConfig;
 import com.dembasiby.orderservice.dto.request.CreateOrderItemRequest;
 import com.dembasiby.orderservice.dto.request.CreateOrderRequest;
 import com.dembasiby.orderservice.dto.request.UpdateOrderStatusRequest;
@@ -12,20 +15,23 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(OrderController.class)
+@Import({SecurityConfig.class, JwtAuthenticationFilter.class, JwtService.class})
 class OrderControllerTest {
 
     @Autowired
@@ -35,6 +41,10 @@ class OrderControllerTest {
 
     @MockitoBean
     private OrderService orderService;
+
+    private UsernamePasswordAuthenticationToken authToken() {
+        return new UsernamePasswordAuthenticationToken(1L, null, List.of());
+    }
 
     @Test
     void createOrder_returns201() throws Exception {
@@ -46,14 +56,13 @@ class OrderControllerTest {
                 .build();
 
         CreateOrderRequest request = CreateOrderRequest.builder()
-                .userId("user-1")
                 .shippingAddress("123 Main St")
                 .items(List.of(itemRequest))
                 .build();
 
         OrderDto response = OrderDto.builder()
                 .id(1L)
-                .userId("user-1")
+                .userId("1")
                 .status(OrderStatus.PENDING)
                 .totalAmount(new BigDecimal("50.00"))
                 .items(List.of(OrderItemDto.builder()
@@ -64,24 +73,39 @@ class OrderControllerTest {
                         .build()))
                 .build();
 
-        when(orderService.createOrder(any(CreateOrderRequest.class))).thenReturn(response);
+        when(orderService.createOrder(any(CreateOrderRequest.class), eq("1"))).thenReturn(response);
+
+        mockMvc.perform(post("/orders")
+                        .with(authentication(authToken()))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.userId").value("1"))
+                .andExpect(jsonPath("$.status").value("PENDING"));
+    }
+
+    @Test
+    void createOrder_returns403WhenUnauthenticated() throws Exception {
+        CreateOrderRequest request = CreateOrderRequest.builder()
+                .shippingAddress("123 Main St")
+                .items(List.of(CreateOrderItemRequest.builder()
+                        .productId("prod-1").productName("P").quantity(1).price(new BigDecimal("10")).build()))
+                .build();
 
         mockMvc.perform(post("/orders")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.userId").value("user-1"))
-                .andExpect(jsonPath("$.status").value("PENDING"));
+                .andExpect(status().isForbidden());
     }
 
     @Test
     void createOrder_returns400ForInvalidInput() throws Exception {
         CreateOrderRequest request = CreateOrderRequest.builder()
-                .userId("")
                 .items(null)
                 .build();
 
         mockMvc.perform(post("/orders")
+                        .with(authentication(authToken()))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
@@ -91,7 +115,7 @@ class OrderControllerTest {
     void getOrderById_returns200() throws Exception {
         OrderDto response = OrderDto.builder()
                 .id(1L)
-                .userId("user-1")
+                .userId("1")
                 .status(OrderStatus.PENDING)
                 .totalAmount(new BigDecimal("50.00"))
                 .items(List.of())
@@ -99,35 +123,38 @@ class OrderControllerTest {
 
         when(orderService.getOrderById(1L)).thenReturn(response);
 
-        mockMvc.perform(get("/orders/1"))
+        mockMvc.perform(get("/orders/1")
+                        .with(authentication(authToken())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1))
-                .andExpect(jsonPath("$.userId").value("user-1"));
+                .andExpect(jsonPath("$.userId").value("1"));
     }
 
     @Test
     void getOrderById_returns404() throws Exception {
         when(orderService.getOrderById(99L)).thenThrow(new NotFoundException("Order not found with id: 99"));
 
-        mockMvc.perform(get("/orders/99"))
+        mockMvc.perform(get("/orders/99")
+                        .with(authentication(authToken())))
                 .andExpect(status().isNotFound());
     }
 
     @Test
-    void getOrdersByUserId_returns200() throws Exception {
+    void getMyOrders_returns200() throws Exception {
         OrderDto response = OrderDto.builder()
                 .id(1L)
-                .userId("user-1")
+                .userId("1")
                 .status(OrderStatus.PENDING)
                 .totalAmount(new BigDecimal("50.00"))
                 .items(List.of())
                 .build();
 
-        when(orderService.getOrdersByUserId("user-1")).thenReturn(List.of(response));
+        when(orderService.getOrdersByUserId("1")).thenReturn(List.of(response));
 
-        mockMvc.perform(get("/orders/user/user-1"))
+        mockMvc.perform(get("/orders/my")
+                        .with(authentication(authToken())))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].userId").value("user-1"));
+                .andExpect(jsonPath("$[0].userId").value("1"));
     }
 
     @Test
@@ -138,7 +165,7 @@ class OrderControllerTest {
 
         OrderDto response = OrderDto.builder()
                 .id(1L)
-                .userId("user-1")
+                .userId("1")
                 .status(OrderStatus.CONFIRMED)
                 .totalAmount(new BigDecimal("50.00"))
                 .items(List.of())
@@ -147,6 +174,7 @@ class OrderControllerTest {
         when(orderService.updateOrderStatus(eq(1L), eq(OrderStatus.CONFIRMED))).thenReturn(response);
 
         mockMvc.perform(put("/orders/1/status")
+                        .with(authentication(authToken()))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
@@ -157,7 +185,7 @@ class OrderControllerTest {
     void cancelOrder_returns200() throws Exception {
         OrderDto response = OrderDto.builder()
                 .id(1L)
-                .userId("user-1")
+                .userId("1")
                 .status(OrderStatus.CANCELLED)
                 .totalAmount(new BigDecimal("50.00"))
                 .items(List.of())
@@ -165,7 +193,8 @@ class OrderControllerTest {
 
         when(orderService.cancelOrder(1L)).thenReturn(response);
 
-        mockMvc.perform(put("/orders/1/cancel"))
+        mockMvc.perform(put("/orders/1/cancel")
+                        .with(authentication(authToken())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("CANCELLED"));
     }

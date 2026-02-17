@@ -13,7 +13,7 @@ import java.util.List;
 
 public class OrderMapper {
 
-    public static Order toOrder(CreateOrderRequest request) {
+    public static Order toOrder(CreateOrderRequest request, String userId) {
         List<OrderItem> items = request.getItems().stream()
                 .map(OrderMapper::toOrderItem)
                 .toList();
@@ -23,7 +23,7 @@ public class OrderMapper {
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         Order order = Order.builder()
-                .userId(request.getUserId())
+                .userId(userId)
                 .shippingAddress(request.getShippingAddress())
                 .status(OrderStatus.PENDING)
                 .totalAmount(totalAmount)

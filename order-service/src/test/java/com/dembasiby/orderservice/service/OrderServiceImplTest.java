@@ -73,7 +73,6 @@ class OrderServiceImplTest {
                 .build();
 
         CreateOrderRequest request = CreateOrderRequest.builder()
-                .userId("user-1")
                 .shippingAddress("123 Main St")
                 .items(List.of(itemRequest))
                 .build();
@@ -84,7 +83,7 @@ class OrderServiceImplTest {
             return order;
         });
 
-        OrderDto result = orderService.createOrder(request);
+        OrderDto result = orderService.createOrder(request, "user-1");
 
         assertNotNull(result);
         assertEquals("user-1", result.getUserId());

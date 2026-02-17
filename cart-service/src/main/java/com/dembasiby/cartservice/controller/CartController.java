@@ -6,39 +6,43 @@ import com.dembasiby.cartservice.service.CartService;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @AllArgsConstructor
-//@RequestMapping("/api/v1/carts")
 public class CartController {
     private final CartService cartService;
 
-    @GetMapping("/{userId}")
-    public ResponseEntity<CartDto> getCart(@PathVariable String userId) {
+    @GetMapping("/")
+    public ResponseEntity<CartDto> getCart(Authentication authentication) {
+        String userId = authentication.getPrincipal().toString();
         return ResponseEntity.ok(cartService.getCart(userId));
     }
 
-    @PostMapping("/{userId}/items")
+    @PostMapping("/items")
     public ResponseEntity<CartDto> addToCart(
-            @PathVariable String userId,
+            Authentication authentication,
             @Valid @RequestBody AddToCartRequest request) {
+        String userId = authentication.getPrincipal().toString();
         return ResponseEntity.ok(cartService.addToCart(userId, request));
     }
 
-    @PutMapping("/{userId}/items/{productId}")
+    @PutMapping("/items/{productId}")
     public ResponseEntity<CartDto> updateItemQuantity(
-            @PathVariable String userId,
+            Authentication authentication,
             @PathVariable String productId,
             @RequestParam int quantity
     ) {
-        return ResponseEntity.ok(
-                cartService .updateItemQuantity( userId, productId, quantity));
+        String userId = authentication.getPrincipal().toString();
+        return ResponseEntity.ok(cartService.updateItemQuantity(userId, productId, quantity));
     }
 
-    @DeleteMapping("/{userId}/items/{productId}")
+    @DeleteMapping("/items/{productId}")
     public ResponseEntity<CartDto> removeItem(
-            @PathVariable String userId, @PathVariable String productId) {
+            Authentication authentication,
+            @PathVariable String productId) {
+        String userId = authentication.getPrincipal().toString();
         return ResponseEntity.ok(cartService.removeItem(userId, productId));
     }
 }

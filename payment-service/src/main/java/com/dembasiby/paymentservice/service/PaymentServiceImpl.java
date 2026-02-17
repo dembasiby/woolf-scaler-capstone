@@ -26,8 +26,8 @@ public class PaymentServiceImpl implements PaymentService {
     private final PaymentEventProducer paymentEventProducer;
 
     @Override
-    public PaymentDto createPayment(CreatePaymentRequest request) {
-        Payment payment = PaymentMapper.toPayment(request);
+    public PaymentDto createPayment(CreatePaymentRequest request, String userId) {
+        Payment payment = PaymentMapper.toPayment(request, userId);
 
         PaymentIntent intent = stripeService.createPaymentIntent(
                 request.getAmount(),

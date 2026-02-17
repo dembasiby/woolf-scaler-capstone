@@ -24,8 +24,8 @@ public class OrderServiceImpl implements OrderService {
     private final OrderEventProducer orderEventProducer;
 
     @Override
-    public OrderDto createOrder(CreateOrderRequest request) {
-        Order order = OrderMapper.toOrder(request);
+    public OrderDto createOrder(CreateOrderRequest request, String userId) {
+        Order order = OrderMapper.toOrder(request, userId);
         Order savedOrder = orderRepository.save(order);
 
         publishEvent(savedOrder, OrderEventType.ORDER_CREATED);

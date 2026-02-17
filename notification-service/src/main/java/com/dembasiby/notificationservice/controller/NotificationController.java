@@ -7,6 +7,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -28,8 +29,9 @@ public class NotificationController {
         return ResponseEntity.ok(notificationService.getNotificationById(notificationId));
     }
 
-    @GetMapping("/user/{userId}")
-    public ResponseEntity<List<NotificationDto>> getNotificationsByUserId(@PathVariable String userId) {
+    @GetMapping("/my")
+    public ResponseEntity<List<NotificationDto>> getMyNotifications(Authentication authentication) {
+        String userId = authentication.getPrincipal().toString();
         return ResponseEntity.ok(notificationService.getNotificationsByUserId(userId));
     }
 }

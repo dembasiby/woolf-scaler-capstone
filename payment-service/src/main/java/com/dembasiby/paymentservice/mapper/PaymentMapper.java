@@ -7,10 +7,10 @@ import com.dembasiby.paymentservice.model.PaymentStatus;
 
 public class PaymentMapper {
 
-    public static Payment toPayment(CreatePaymentRequest request) {
+    public static Payment toPayment(CreatePaymentRequest request, String userId) {
         return Payment.builder()
                 .orderId(request.getOrderId())
-                .userId(request.getUserId())
+                .userId(userId)
                 .amount(request.getAmount())
                 .currency(request.getCurrency() != null ? request.getCurrency() : "USD")
                 .status(PaymentStatus.PENDING)

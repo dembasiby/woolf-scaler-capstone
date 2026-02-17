@@ -1,7 +1,6 @@
 package com.dembasiby.orderservice.dto.request;
 
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import lombok.*;
 
@@ -11,9 +10,6 @@ import java.util.List;
 @NoArgsConstructor @AllArgsConstructor
 @Builder
 public class CreateOrderRequest {
-
-    @NotBlank(message = "User ID is required")
-    private String userId;
 
     private String shippingAddress;
 
