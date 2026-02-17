@@ -75,7 +75,7 @@ class OrderControllerTest {
 
         when(orderService.createOrder(any(CreateOrderRequest.class), eq("1"))).thenReturn(response);
 
-        mockMvc.perform(post("/orders")
+        mockMvc.perform(post("/")
                         .with(authentication(authToken()))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
@@ -92,7 +92,7 @@ class OrderControllerTest {
                         .productId("prod-1").productName("P").quantity(1).price(new BigDecimal("10")).build()))
                 .build();
 
-        mockMvc.perform(post("/orders")
+        mockMvc.perform(post("/")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isForbidden());
@@ -104,7 +104,7 @@ class OrderControllerTest {
                 .items(null)
                 .build();
 
-        mockMvc.perform(post("/orders")
+        mockMvc.perform(post("/")
                         .with(authentication(authToken()))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
@@ -123,7 +123,7 @@ class OrderControllerTest {
 
         when(orderService.getOrderById(1L)).thenReturn(response);
 
-        mockMvc.perform(get("/orders/1")
+        mockMvc.perform(get("/1")
                         .with(authentication(authToken())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1))
@@ -134,7 +134,7 @@ class OrderControllerTest {
     void getOrderById_returns404() throws Exception {
         when(orderService.getOrderById(99L)).thenThrow(new NotFoundException("Order not found with id: 99"));
 
-        mockMvc.perform(get("/orders/99")
+        mockMvc.perform(get("/99")
                         .with(authentication(authToken())))
                 .andExpect(status().isNotFound());
     }
@@ -151,7 +151,7 @@ class OrderControllerTest {
 
         when(orderService.getOrdersByUserId("1")).thenReturn(List.of(response));
 
-        mockMvc.perform(get("/orders/my")
+        mockMvc.perform(get("/my")
                         .with(authentication(authToken())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].userId").value("1"));
@@ -173,7 +173,7 @@ class OrderControllerTest {
 
         when(orderService.updateOrderStatus(eq(1L), eq(OrderStatus.CONFIRMED))).thenReturn(response);
 
-        mockMvc.perform(put("/orders/1/status")
+        mockMvc.perform(put("/1/status")
                         .with(authentication(authToken()))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
@@ -193,7 +193,7 @@ class OrderControllerTest {
 
         when(orderService.cancelOrder(1L)).thenReturn(response);
 
-        mockMvc.perform(put("/orders/1/cancel")
+        mockMvc.perform(put("/1/cancel")
                         .with(authentication(authToken())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("CANCELLED"));

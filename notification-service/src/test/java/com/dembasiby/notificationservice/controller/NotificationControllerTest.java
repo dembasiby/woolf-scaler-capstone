@@ -66,7 +66,7 @@ class NotificationControllerTest {
 
         when(notificationService.sendNotification(any(SendNotificationRequest.class))).thenReturn(response);
 
-        mockMvc.perform(post("/notifications")
+        mockMvc.perform(post("/")
                         .with(authentication(authToken()))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
@@ -85,7 +85,7 @@ class NotificationControllerTest {
                 .eventType("ORDER_CONFIRMED")
                 .build();
 
-        mockMvc.perform(post("/notifications")
+        mockMvc.perform(post("/")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isForbidden());
@@ -101,7 +101,7 @@ class NotificationControllerTest {
                 .eventType("")
                 .build();
 
-        mockMvc.perform(post("/notifications")
+        mockMvc.perform(post("/")
                         .with(authentication(authToken()))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
@@ -120,7 +120,7 @@ class NotificationControllerTest {
 
         when(notificationService.getNotificationById(1L)).thenReturn(response);
 
-        mockMvc.perform(get("/notifications/1")
+        mockMvc.perform(get("/1")
                         .with(authentication(authToken())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1))
@@ -139,7 +139,7 @@ class NotificationControllerTest {
 
         when(notificationService.getNotificationsByUserId("1")).thenReturn(List.of(response));
 
-        mockMvc.perform(get("/notifications/my")
+        mockMvc.perform(get("/my")
                         .with(authentication(authToken())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].userId").value("1"));

@@ -67,7 +67,7 @@ class UserControllerTest {
 
         when(userService.register(any(RegisterRequest.class))).thenReturn(authResponse);
 
-        mockMvc.perform(post("/users/register")
+        mockMvc.perform(post("/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
@@ -84,7 +84,7 @@ class UserControllerTest {
                 .lastName("")
                 .build();
 
-        mockMvc.perform(post("/users/register")
+        mockMvc.perform(post("/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
@@ -112,7 +112,7 @@ class UserControllerTest {
 
         when(userService.login(any(LoginRequest.class))).thenReturn(authResponse);
 
-        mockMvc.perform(post("/users/login")
+        mockMvc.perform(post("/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
@@ -121,7 +121,7 @@ class UserControllerTest {
 
     @Test
     void getMe_shouldReturn401WithoutToken() throws Exception {
-        mockMvc.perform(get("/users/me"))
+        mockMvc.perform(get("/me"))
                 .andExpect(status().isForbidden());
     }
 
@@ -140,7 +140,7 @@ class UserControllerTest {
         UsernamePasswordAuthenticationToken auth =
                 new UsernamePasswordAuthenticationToken(1L, null, List.of());
 
-        mockMvc.perform(get("/users/me")
+        mockMvc.perform(get("/me")
                         .with(authentication(auth)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.email").value("test@example.com"));
@@ -148,7 +148,7 @@ class UserControllerTest {
 
     @Test
     void getUserById_shouldReturn401WithoutToken() throws Exception {
-        mockMvc.perform(get("/users/1"))
+        mockMvc.perform(get("/1"))
                 .andExpect(status().isForbidden());
     }
 
@@ -167,7 +167,7 @@ class UserControllerTest {
         UsernamePasswordAuthenticationToken auth =
                 new UsernamePasswordAuthenticationToken(1L, null, List.of());
 
-        mockMvc.perform(get("/users/1")
+        mockMvc.perform(get("/1")
                         .with(authentication(auth)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1));

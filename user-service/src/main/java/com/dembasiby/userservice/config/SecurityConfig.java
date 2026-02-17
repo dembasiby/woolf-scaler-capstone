@@ -25,9 +25,9 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
-                                "/users/register",
-                                "/users/login",
-                                "/users/password-reset/**",
+                                "/register",
+                                "/login",
+                                "/password-reset/**",
                                 "/actuator/**",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",

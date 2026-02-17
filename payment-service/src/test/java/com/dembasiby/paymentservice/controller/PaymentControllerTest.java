@@ -62,7 +62,7 @@ class PaymentControllerTest {
 
         when(paymentService.createPayment(any(CreatePaymentRequest.class), eq("1"))).thenReturn(response);
 
-        mockMvc.perform(post("/payments")
+        mockMvc.perform(post("/")
                         .with(authentication(authToken()))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
@@ -78,7 +78,7 @@ class PaymentControllerTest {
                 .amount(new BigDecimal("99.99"))
                 .build();
 
-        mockMvc.perform(post("/payments")
+        mockMvc.perform(post("/")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isForbidden());
@@ -91,7 +91,7 @@ class PaymentControllerTest {
                 .amount(null)
                 .build();
 
-        mockMvc.perform(post("/payments")
+        mockMvc.perform(post("/")
                         .with(authentication(authToken()))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
@@ -110,7 +110,7 @@ class PaymentControllerTest {
 
         when(paymentService.getPaymentById(1L)).thenReturn(response);
 
-        mockMvc.perform(get("/payments/1")
+        mockMvc.perform(get("/1")
                         .with(authentication(authToken())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1))
@@ -129,7 +129,7 @@ class PaymentControllerTest {
 
         when(paymentService.getPaymentByOrderId(100L)).thenReturn(response);
 
-        mockMvc.perform(get("/payments/order/100")
+        mockMvc.perform(get("/order/100")
                         .with(authentication(authToken())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.orderId").value(100));
@@ -147,7 +147,7 @@ class PaymentControllerTest {
 
         when(paymentService.getPaymentsByUserId("1")).thenReturn(List.of(response));
 
-        mockMvc.perform(get("/payments/my")
+        mockMvc.perform(get("/my")
                         .with(authentication(authToken())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].userId").value("1"));
